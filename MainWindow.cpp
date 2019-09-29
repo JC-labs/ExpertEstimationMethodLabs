@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "Lab1ResultWidget.hpp"
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
 	ui.setupUi(this);
@@ -18,6 +19,13 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
 	connect(ui.experts, &QTableWidget::cellChanged, this, &MainWindow::on_expert_name_changed);
 	connect(ui.alternatives, &QTableWidget::cellChanged, this, &MainWindow::on_alternative_name_changed);
 	connect(ui.estimations, &QTableWidget::cellChanged, this, &MainWindow::on_cell_changed);
+
+	auto lab1 = new Lab1ResultWidget(this);
+	ui.result_layout->addWidget(lab1);
+	connect(ui.experts, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
+	connect(ui.alternatives, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
+	connect(ui.estimations, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
+	lab1->update_value();
 }
 
 std::vector<std::string> MainWindow::get_experts() const {
@@ -43,6 +51,22 @@ std::vector<std::vector<double>> MainWindow::get_estimations() const {
 	return ret;
 }
 
+void MainWindow::set_accent(size_t index) {
+	if (m_current_accent != index) {
+		if (m_current_accent != -1) {
+			if (auto temp = ui.alternatives->item(m_current_accent, 0); temp)
+				temp->setForeground(Qt::black);
+			if (auto temp = ui.estimations->horizontalHeaderItem(m_current_accent); temp)
+				temp->setForeground(Qt::black);
+		}
+		if (auto temp = ui.alternatives->item(index, 0); temp)
+			temp->setForeground(QColor(128, 0, 128));
+		if (auto temp = ui.estimations->horizontalHeaderItem(index); temp)
+			temp->setForeground(QColor(128, 0, 128));
+		m_current_accent = index;
+	}
+}
+
 void MainWindow::on_size_changed() {
 	auto expert_number = ui.expert_number->value(),
 		alternative_number = ui.alternative_number->value();
@@ -54,7 +78,7 @@ void MainWindow::on_size_changed() {
 
 	for (size_t i = 0; i < ui.estimations->rowCount(); i++) {
 		for (size_t j = 0; j < ui.estimations->columnCount(); j++) 
-			if (ui.estimations->item(i, j)) {
+			if (!ui.estimations->item(i, j)) {
 				ui.estimations->setItem(i, j, new QTableWidgetItem("0"));
 				ui.estimations->item(i, j)->setTextAlignment(Qt::AlignCenter);
 			}
