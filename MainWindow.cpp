@@ -1,6 +1,25 @@
 #include "MainWindow.h"
 #include "Lab1ResultWidget.hpp"
 
+void MainWindow::connect_all() {
+	connect(ui.experts, &QTableWidget::cellChanged, this, &MainWindow::on_expert_name_changed);
+	connect(ui.alternatives, &QTableWidget::cellChanged, this, &MainWindow::on_alternative_name_changed);
+	connect(ui.estimations, &QTableWidget::cellChanged, this, &MainWindow::on_cell_changed);
+
+	connect(ui.experts, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+	connect(ui.alternatives, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+	connect(ui.estimations, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+}
+void MainWindow::disconnect_all() {
+	disconnect(ui.experts, &QTableWidget::cellChanged, this, &MainWindow::on_expert_name_changed);
+	disconnect(ui.alternatives, &QTableWidget::cellChanged, this, &MainWindow::on_alternative_name_changed);
+	disconnect(ui.estimations, &QTableWidget::cellChanged, this, &MainWindow::on_cell_changed);
+	
+	disconnect(ui.experts, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+	disconnect(ui.alternatives, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+	disconnect(ui.estimations, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
+}
+
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
 	ui.setupUi(this);
 
@@ -14,18 +33,15 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
 	ui.alternatives->setHorizontalHeaderItem(0, new QTableWidgetItem("Alternatives"));
 	ui.alternatives->setColumnWidth(0, 100);
 
+	m_results = new Lab1ResultWidget(this);
+	ui.result_layout->addWidget(m_results);
 	on_size_changed();
+	connect_all();
+	m_results->update_value();
+}
 
-	connect(ui.experts, &QTableWidget::cellChanged, this, &MainWindow::on_expert_name_changed);
-	connect(ui.alternatives, &QTableWidget::cellChanged, this, &MainWindow::on_alternative_name_changed);
-	connect(ui.estimations, &QTableWidget::cellChanged, this, &MainWindow::on_cell_changed);
-
-	auto lab1 = new Lab1ResultWidget(this);
-	ui.result_layout->addWidget(lab1);
-	connect(ui.experts, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
-	connect(ui.alternatives, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
-	connect(ui.estimations, &QTableWidget::cellChanged, lab1, &Lab1ResultWidget::update_value);
-	lab1->update_value();
+MainWindow::~MainWindow() {
+	delete m_results;
 }
 
 std::vector<std::string> MainWindow::get_experts() const {
@@ -51,23 +67,41 @@ std::vector<std::vector<double>> MainWindow::get_estimations() const {
 	return ret;
 }
 
-void MainWindow::set_accent(size_t index) {
-	if (m_current_accent != index) {
+void MainWindow::set_accent(size_t index, bool is_column) {
+	disconnect_all();
+	if (m_current_accent != index || m_current_accent_direction != is_column) {
 		if (m_current_accent != -1) {
-			if (auto temp = ui.alternatives->item(m_current_accent, 0); temp)
-				temp->setForeground(Qt::black);
-			if (auto temp = ui.estimations->horizontalHeaderItem(m_current_accent); temp)
-				temp->setForeground(Qt::black);
+			if (m_current_accent_direction) {
+				if (auto temp = ui.alternatives->item(m_current_accent, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->horizontalHeaderItem(m_current_accent); temp)
+					temp->setForeground(Qt::black);
+			} else {
+				if (auto temp = ui.experts->item(m_current_accent, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->verticalHeaderItem(m_current_accent); temp)
+					temp->setForeground(Qt::black);
+			}
 		}
-		if (auto temp = ui.alternatives->item(index, 0); temp)
-			temp->setForeground(QColor(128, 0, 128));
-		if (auto temp = ui.estimations->horizontalHeaderItem(index); temp)
-			temp->setForeground(QColor(128, 0, 128));
+		if (is_column) {
+			if (auto temp = ui.alternatives->item(index, 0); temp)
+				temp->setForeground(QColor(128, 0, 128));
+			if (auto temp = ui.estimations->horizontalHeaderItem(index); temp)
+				temp->setForeground(QColor(128, 0, 128));
+		} else {
+			if (auto temp = ui.experts->item(index, 0); temp)
+				temp->setForeground(QColor(128, 0, 128));
+			if (auto temp = ui.estimations->verticalHeaderItem(index); temp)
+				temp->setForeground(QColor(128, 0, 128));
+		}
 		m_current_accent = index;
+		m_current_accent_direction = is_column;
 	}
+	connect_all();
 }
 
 void MainWindow::on_size_changed() {
+	disconnect_all();
 	auto expert_number = ui.expert_number->value(),
 		alternative_number = ui.alternative_number->value();
 
@@ -109,6 +143,8 @@ void MainWindow::on_size_changed() {
 		if (!ui.alternatives->verticalHeaderItem(i))
 			ui.alternatives->setVerticalHeaderItem(i, new QTableWidgetItem(""));
 	}
+	connect_all();
+	m_results->update_value();
 }
 
 void MainWindow::on_cell_changed(int row, int col) {

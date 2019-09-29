@@ -1,7 +1,39 @@
 #include "Lab1ResultWidget.hpp"
 #include "MainWindow.h"
 
-std::vector<double> Lab1ResultWidget::lab1(std::vector<std::vector<double>>& data) {
+size_t max_in_row(std::vector<std::vector<double>> const& data, size_t row) {
+	return std::distance(data[row].begin(), std::max_element(data[row].begin(), data[row].end()));
+}
+size_t min_in_row(std::vector<std::vector<double>> const& data, size_t row) {
+	return std::distance(data[row].begin(), std::min_element(data[row].begin(), data[row].end()));
+}
+size_t max_in_column(std::vector<std::vector<double>> const& data, size_t column) {
+	size_t ret = -1; double value = std::numeric_limits<double>::min();
+	for (size_t i = 0; i < data.size(); i++)
+		if (value < data[i][column]) {
+			ret = i;
+			value = data[i][column];
+		}
+	return ret;
+}
+size_t min_in_column(std::vector<std::vector<double>> const& data, size_t column) {
+	size_t ret = -1; double value = std::numeric_limits<double>::max();
+	for (size_t i = 0; i < data.size(); i++)
+		if (value > data[i][column]) {
+			ret = i;
+			value = data[i][column];
+		}
+	return ret;
+}
+
+size_t max_element(std::vector<double> const& data) {
+	return std::distance(data.begin(), std::max_element(data.begin(), data.end()));
+}
+size_t min_element(std::vector<double> const& data) {
+	return std::distance(data.begin(), std::min_element(data.begin(), data.end()));
+}
+
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab1(std::vector<std::vector<double>>& data) {
 	if (!data.size())
 		return {};
 	std::vector<double> expert_sums(data.size());
@@ -10,14 +42,63 @@ std::vector<double> Lab1ResultWidget::lab1(std::vector<std::vector<double>>& dat
 		for (size_t j = 0; j < data.front().size(); j++)
 			expert_sums[i] += data[i][j];
 	}
-	std::vector<double> alternative_values(data.front().size());
-	for (size_t j = 0; j < alternative_values.size(); j++) {
-		alternative_values[j] = 0;
+	std::vector<double> result(data.front().size());
+	for (size_t j = 0; j < result.size(); j++) {
+		result[j] = 0;
 		for (size_t i = 0; i < expert_sums.size(); i++)
-			alternative_values[j] += data[i][j] / expert_sums[i];
-		alternative_values[j] /= alternative_values.size();
+			result[j] += data[i][j] / expert_sums[i];
+		result[j] /= result.size();
 	}
-	return alternative_values;
+	return { max_element(result), result };
+}
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab21(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> temp(data.size());
+	for (size_t i = 0; i < temp.size(); i++)
+		temp[i] = data[i][min_element(data[i])];
+	return { max_element(temp), temp };
+}
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab22(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> temp(data.size());
+	for (size_t i = 0; i < temp.size(); i++)
+		temp[i] = data[i][max_element(data[i])];
+	return { min_element(temp), temp };
+}
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab23(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> temp(data.size());
+	for (size_t i = 0; i < temp.size(); i++)
+		temp[i] = 0.6 * data[i][max_element(data[i])] + 
+				  0.4 * data[i][min_element(data[i])];
+	return { max_element(temp), temp };
+}
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab24(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> maxes(data.front().size());
+	for (size_t j = 0; j < maxes.size(); j++)
+		maxes[j] = max_in_column(data, j);
+	auto r = data;
+	for (size_t i = 0; i < r.size(); i++)
+		for (size_t j = 0; j < r[i].size(); j++)
+			r[i][j] = maxes[j] - r[i][j];
+	return lab22(r);
+}
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab25(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> sums(data.size());
+	for (size_t i = 0; i < sums.size(); i++) {
+		sums[i] = 0;
+		for (size_t j = 0; j < data[i].size(); j++)
+			sums[i] += data[i][j];
+		sums[i] /= data[i].size();
+	}
+	return { max_element(sums), sums };
 }
 
 Lab1ResultWidget::Lab1ResultWidget(MainWindow* data, QWidget *parent) : QWidget(parent), m_data(data) {
@@ -36,30 +117,46 @@ Lab1ResultWidget::Lab1ResultWidget(MainWindow* data, QWidget *parent) : QWidget(
 void Lab1ResultWidget::update_value() {
 	auto& [experts, alternatives, estimations] = m_data->get();
 	
-	std::vector<double> alternative_values;
+	std::pair<size_t, std::vector<double>> result;
 	if (ui.o1->isChecked())
-		alternative_values = lab1(estimations);
+		result = lab1(estimations);
+	else if (ui.o21->isChecked())
+		result = lab21(estimations);
+	else if (ui.o22->isChecked())
+		result = lab22(estimations);
+	else if (ui.o23->isChecked())
+		result = lab23(estimations);
+	else if (ui.o24->isChecked())
+		result = lab24(estimations);
+	else if (ui.o25->isChecked())
+		result = lab25(estimations);
 	else {}
 
-	ui.alternatives->setColumnCount(alternative_values.size());
+	auto names = alternatives;
+	if (!ui.o1->isChecked())
+		names = experts;
+
+	ui.alternatives->setColumnCount(result.second.size());
 	for (size_t j = 0; j < ui.alternatives->columnCount(); j++) {
 		for (size_t i = 0; i < ui.alternatives->rowCount(); i++)
 			if (auto temp = ui.alternatives->item(i, j); temp) {
-				temp->setText(QString::number(alternative_values[j]));
+				temp->setText(QString::number(result.second[j]));
 				temp->setForeground(Qt::black);
 			} else {
-				ui.alternatives->setItem(i, j, new QTableWidgetItem(QString::number(alternative_values[j])));
+				ui.alternatives->setItem(i, j, new QTableWidgetItem(QString::number(result.second[j])));
 				ui.alternatives->item(i, j)->setTextAlignment(Qt::AlignCenter);
 			}
 		if (auto temp = ui.alternatives->horizontalHeaderItem(j); temp)
-			temp->setText(QString::fromStdString(alternatives[j]));
+			temp->setText(QString::fromStdString(names[j]));
 		else {
-			ui.alternatives->setHorizontalHeaderItem(j, new QTableWidgetItem(QString::fromStdString(alternatives[j])));
+			ui.alternatives->setHorizontalHeaderItem(j, new QTableWidgetItem(QString::fromStdString(names[j])));
 			ui.alternatives->setColumnWidth(j, 100);
 		}
 	}
-	auto max = std::distance(alternative_values.begin(), std::max_element(alternative_values.begin(), alternative_values.end()));
-	if (auto temp = ui.alternatives->item(0, max); temp)
+	if (auto temp = ui.alternatives->item(0, result.first); temp)
 		temp->setForeground(QColor(128, 0, 128));
-	m_data->set_accent(max);
+	if (ui.o1->isChecked())
+		m_data->set_accent(result.first, true);
+	else
+		m_data->set_accent(result.first, false);
 }
