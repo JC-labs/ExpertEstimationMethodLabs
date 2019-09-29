@@ -15,6 +15,7 @@ protected:
 	std::pair<size_t, std::vector<double>> lab23(std::vector<std::vector<double>> &data);
 	std::pair<size_t, std::vector<double>> lab24(std::vector<std::vector<double>>& data);
 	std::pair<size_t, std::vector<double>> lab25(std::vector<std::vector<double>>& data);
+	std::pair<size_t, std::vector<double>> lab3(std::vector<std::vector<double>>& data);
 public:
 	Lab1ResultWidget(MainWindow *data, QWidget *parent = Q_NULLPTR);
 public slots:

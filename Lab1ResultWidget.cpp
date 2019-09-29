@@ -100,6 +100,27 @@ std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab25(std::vector<std::
 	}
 	return { max_element(sums), sums };
 }
+std::pair<size_t, std::vector<double>> Lab1ResultWidget::lab3(std::vector<std::vector<double>>& data) {
+	if (!data.size())
+		return {};
+	std::vector<double> counts(data.front().size());
+	for (size_t i = 0; i < counts.size(); i++)
+		for (size_t j = i + 1; j < counts.size(); j++) {
+			bool first_is_better = false,
+				second_is_better = false;
+			for (size_t k = 0; k < data.size(); k++) {
+				if (data[k][i] < data[k][j])
+					first_is_better = true;
+				else if (data[k][i] > data[k][j])
+					second_is_better = true;
+			}
+			if (first_is_better && !second_is_better)
+				counts[j]++;
+			if (second_is_better && !first_is_better)
+				counts[i]++;
+		}
+	return { 0, counts };
+}
 
 Lab1ResultWidget::Lab1ResultWidget(MainWindow* data, QWidget *parent) : QWidget(parent), m_data(data) {
 	ui.setupUi(this);
@@ -112,6 +133,7 @@ Lab1ResultWidget::Lab1ResultWidget(MainWindow* data, QWidget *parent) : QWidget(
 	connect(ui.o23, &QRadioButton::clicked, this, &Lab1ResultWidget::update_value);
 	connect(ui.o24, &QRadioButton::clicked, this, &Lab1ResultWidget::update_value);
 	connect(ui.o25, &QRadioButton::clicked, this, &Lab1ResultWidget::update_value);
+	connect(ui.o3, &QRadioButton::clicked, this, &Lab1ResultWidget::update_value);
 }
 
 void Lab1ResultWidget::update_value() {
@@ -130,10 +152,12 @@ void Lab1ResultWidget::update_value() {
 		result = lab24(estimations);
 	else if (ui.o25->isChecked())
 		result = lab25(estimations);
+	else if (ui.o3->isChecked())
+		result = lab3(estimations);
 	else {}
 
 	auto names = alternatives;
-	if (!ui.o1->isChecked())
+	if (!ui.o1->isChecked() && !ui.o3->isChecked())
 		names = experts;
 
 	ui.alternatives->setColumnCount(result.second.size());
@@ -153,10 +177,18 @@ void Lab1ResultWidget::update_value() {
 			ui.alternatives->setColumnWidth(j, 100);
 		}
 	}
-	if (auto temp = ui.alternatives->item(0, result.first); temp)
-		temp->setForeground(QColor(128, 0, 128));
-	if (ui.o1->isChecked())
-		m_data->set_accent(result.first, true);
-	else
-		m_data->set_accent(result.first, false);
+	if (!ui.o3->isChecked()) {
+		if (auto temp = ui.alternatives->item(0, result.first); temp)
+			temp->setForeground(QColor(96, 0, 96));
+		if (ui.o1->isChecked())
+			m_data->set_accent(result.first, true);
+		else
+			m_data->set_accent(result.first, false);
+	} else {
+		for (size_t j = 0; j < ui.alternatives->columnCount(); j++)
+			if (auto temp = ui.alternatives->item(0, j); temp && temp->text() == "0")
+				temp->setForeground(QColor(96, 0, 96));
+		m_data->set_accent(0, false);
+		m_data->multi_accent(result.second);
+	}
 }

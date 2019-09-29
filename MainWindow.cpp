@@ -20,6 +20,40 @@ void MainWindow::disconnect_all() {
 	disconnect(ui.estimations, &QTableWidget::cellChanged, m_results, &Lab1ResultWidget::update_value);
 }
 
+void MainWindow::clear_accent() {
+	if (m_multi_accent) {
+		if (m_current_accent_direction)
+			for (size_t i = 0; i < ui.alternatives->rowCount(); i++) {
+				if (auto temp = ui.alternatives->item(i, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->horizontalHeaderItem(i); temp)
+					temp->setForeground(Qt::black);
+			}
+		else
+			for (size_t i = 0; i < ui.alternatives->rowCount(); i++) {
+				if (auto temp = ui.experts->item(i, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->verticalHeaderItem(i); temp)
+					temp->setForeground(Qt::black);
+			}
+	} else {
+		if (m_current_accent != -1) {
+			if (m_current_accent_direction) {
+				if (auto temp = ui.alternatives->item(m_current_accent, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->horizontalHeaderItem(m_current_accent); temp)
+					temp->setForeground(Qt::black);
+			}
+			else {
+				if (auto temp = ui.experts->item(m_current_accent, 0); temp)
+					temp->setForeground(Qt::black);
+				if (auto temp = ui.estimations->verticalHeaderItem(m_current_accent); temp)
+					temp->setForeground(Qt::black);
+			}
+		}
+	}
+}
+
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent) {
 	ui.setupUi(this);
 
@@ -68,36 +102,54 @@ std::vector<std::vector<double>> MainWindow::get_estimations() const {
 }
 
 void MainWindow::set_accent(size_t index, bool is_column) {
-	disconnect_all();
-	if (m_current_accent != index || m_current_accent_direction != is_column) {
-		if (m_current_accent != -1) {
-			if (m_current_accent_direction) {
-				if (auto temp = ui.alternatives->item(m_current_accent, 0); temp)
-					temp->setForeground(Qt::black);
-				if (auto temp = ui.estimations->horizontalHeaderItem(m_current_accent); temp)
-					temp->setForeground(Qt::black);
-			} else {
-				if (auto temp = ui.experts->item(m_current_accent, 0); temp)
-					temp->setForeground(Qt::black);
-				if (auto temp = ui.estimations->verticalHeaderItem(m_current_accent); temp)
-					temp->setForeground(Qt::black);
-			}
-		}
+	if (m_current_accent != index || m_current_accent_direction != is_column || m_multi_accent) {
+		disconnect_all();
+		clear_accent();
+
 		if (is_column) {
 			if (auto temp = ui.alternatives->item(index, 0); temp)
-				temp->setForeground(QColor(128, 0, 128));
+				temp->setForeground(QColor(96, 0, 96));
 			if (auto temp = ui.estimations->horizontalHeaderItem(index); temp)
-				temp->setForeground(QColor(128, 0, 128));
+				temp->setForeground(QColor(96, 0, 96));
 		} else {
 			if (auto temp = ui.experts->item(index, 0); temp)
-				temp->setForeground(QColor(128, 0, 128));
+				temp->setForeground(QColor(96, 0, 96));
 			if (auto temp = ui.estimations->verticalHeaderItem(index); temp)
-				temp->setForeground(QColor(128, 0, 128));
+				temp->setForeground(QColor(96, 0, 96));
 		}
-		m_current_accent = index;
-		m_current_accent_direction = is_column;
+		connect_all();
 	}
-	connect_all();
+	m_current_accent = index;
+	m_current_accent_direction = is_column;
+	m_multi_accent = false;
+}
+
+void MainWindow::multi_accent(std::vector<double> const& input, bool is_column) {
+	if (input.size() && (m_current_accent_direction != is_column || !m_multi_accent)) {
+		disconnect_all();
+		clear_accent();
+
+		if (is_column) {
+			for (size_t i = 0; i < ui.alternatives->rowCount(); i++)
+				if (input[i] == 0) {
+					if (auto temp = ui.alternatives->item(i, 0); temp)
+						temp->setForeground(QColor(96, 0, 96));
+					if (auto temp = ui.estimations->horizontalHeaderItem(i); temp)
+						temp->setForeground(QColor(96, 0, 96));
+				}
+		} else
+			for (size_t i = 0; i < ui.alternatives->rowCount(); i++)
+				if (input[i] == 0) {
+					if (auto temp = ui.experts->item(i, 0); temp)
+						temp->setForeground(QColor(96, 0, 96));
+					if (auto temp = ui.estimations->verticalHeaderItem(i); temp)
+						temp->setForeground(QColor(96, 0, 96));
+				}
+		connect_all();
+	}
+	m_current_accent = -1;
+	m_current_accent_direction = is_column;
+	m_multi_accent = true;
 }
 
 void MainWindow::on_size_changed() {

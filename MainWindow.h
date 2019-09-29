@@ -12,10 +12,13 @@ private:
 
 	size_t m_current_accent = -1;
 	bool m_current_accent_direction = false;
+	bool m_multi_accent = false;
 	Lab1ResultWidget* m_results;
 protected:
 	void connect_all();
 	void disconnect_all();
+
+	void clear_accent();
 public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
@@ -26,6 +29,7 @@ public:
 	auto get() const { return std::make_tuple(get_experts(), get_alternatives(), get_estimations()); }
 
 	void set_accent(size_t index, bool is_column = true);
+	void multi_accent(std::vector<double> const& input, bool is_column = true);
 
 public slots:
 	void on_size_changed();
