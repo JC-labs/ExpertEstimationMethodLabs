@@ -8,6 +8,8 @@ class Lab1ResultWidget : public QWidget {
 private:
 	Ui::Lab1ResultWidget ui;
 	MainWindow* m_data;
+protected:
+	std::vector<double> lab1(std::vector<std::vector<double>> &data);
 public:
 	Lab1ResultWidget(MainWindow *data, QWidget *parent = Q_NULLPTR);
 public slots:
